@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuel Cell Assembly Simulation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2d3b8c, #4a5fc1);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .parts-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .assembly-area {
+            flex: 2;
+            min-width: 700px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            min-height: 600px;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffcc00;
+            border-bottom: 2px solid #ffcc00;
+            padding-bottom: 10px;
+        }
+        
+        .parts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        
+        .part {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 140px;
+        }
+        
+        .part:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .part-icon {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .anode-icon {
+            background: linear-gradient(45deg, #ff4d4d, #ff3333);
+            border: 2px solid #ff6666;
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+        
+        .cathode-icon {
+            background: linear-gradient(45deg, #4d79ff, #3366ff);
+            border: 2px solid #6699ff;
+            box-shadow: 0 0 10px rgba(77, 121, 255, 0.5);
+        }
+        
+        .electrolyte-icon {
+            background: linear-gradient(45deg, #4dff4d, #33cc33);
+            border: 2px solid #66ff66;
+            box-shadow: 0 0 10px rgba(77, 255, 77, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .electrolyte-icon::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 5px,
+                rgba(255, 255, 255, 0.3) 5px,
+                rgba(255, 255, 255, 0.3) 10px
+            );
+        }
+        
+        .circuit-icon {
+            background: linear-gradient(45deg, #666666, #333333);
+            border: 2px solid #999999;
+            box-shadow: 0 0 10px rgba(102, 102, 102, 0.5);
+            position: relative;
+        }
+        
+        .circuit-icon::before {
+            content: "";
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .circuit-icon::after {
+            content: "";
+            position: absolute;
+            top: 60%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .part-name {
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 1rem;
+            color: #fff;
+        }
+        
+        .fuel-cell {
+            width: 600px;
+            height: 500px;
+            margin: 20px auto;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cell-container {
+            width: 500px;
+            height: 400px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .drop-zone {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .drop-zone.highlight {
+            border-color: #ffcc00;
+            background: rgba(255, 204, 0, 0.1);
+        }
+        
+        .drop-zone.filled {
+            border-style: solid;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .drop-zone.correct {
+            border-color: #4CAF50;
+        }
+        
+        .drop-zone.incorrect {
+            border-color: #ff3333;
+            background: rgba(255, 100, 100, 0.1);
+        }
+        
+        .anode-zone {
+            top: 50px;
+            left: 50px;
+            width: 100px;
+            height: 300px;
+        }
+        
+        .cathode-zone {
+            top: 50px;
+            right: 50px;
+            width: 100px;
+            height: 300px;
+        }
+        
+        .electrolyte-zone {
+            top: 50px;
+            left: 160px;
+            width: 180px;
+            height: 300px;
+        }
+        
+        .circuit-zone {
+            bottom: 30px;
+            left: 50px;
+            width: 400px;
+            height: 60px;
+        }
+        
+        .current-flow {
+            position: absolute;
+            width: 0;
+            height: 8px;
+            background: linear-gradient(to right, #ffcc00, #ff9900);
+            border-radius: 4px;
+            top: 370px;
+            left: 50px;
+            opacity: 0;
+            transition: width 0.5s ease, opacity 0.5s ease;
+            box-shadow: 0 0 15px #ffcc00;
+        }
+        
+        .current-flow.active {
+            width: 400px;
+            opacity: 1;
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { opacity: 0.7; box-shadow: 0 0 10px #ffcc00; }
+            to { opacity: 1; box-shadow: 0 0 25px #ffcc00, 0 0 35px #ff9900; }
+        }
+        
+        .bulb {
+            position: absolute;
+            bottom: 120px;
+            right: 50px;
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border-radius: 50%;
+            border: 2px solid #555;
+            transition: all 0.5s ease;
+        }
+        
+        .bulb.lit {
+            background: #ffcc00;
+            box-shadow: 0 0 25px #ffcc00, 0 0 45px #ff9900;
+            border-color: #ff9900;
+        }
+        
+        .hydrogen-flow, .oxygen-flow {
+            position: absolute;
+            width: 80px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .hydrogen-flow {
+            top: 170px;
+            left: -90px;
+            background: rgba(255, 100, 100, 0.7);
+            border: 1px solid #ff6666;
+        }
+        
+        .oxygen-flow {
+            top: 170px;
+            right: -90px;
+            background: rgba(100, 100, 255, 0.7);
+            border: 1px solid #6666ff;
+        }
+        
+        .hydrogen-flow.active, .oxygen-flow.active {
+            opacity: 1;
+        }
+        
+        .water-output {
+            position: absolute;
+            bottom: 170px;
+            right: -90px;
+            width: 80px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            background: rgba(100, 200, 255, 0.7);
+            border: 1px solid #66ccff;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .water-output.active {
+            opacity: 1;
+        }
+        
+        .controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            opacity: 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .message.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+            opacity: 1;
+        }
+        
+        .message.error {
+            background: rgba(255, 100, 100, 0.3);
+            border: 1px solid #ff6666;
+            opacity: 1;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .instructions h3 {
+            color: #ffcc00;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-right: 20px;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .part-in-zone {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            border-radius: 5px;
+            position: relative;
+        }
+        
+        .anode-in-zone {
+            background: linear-gradient(45deg, #ff4d4d, #ff3333);
+            border: 2px solid #ff6666;
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        }
+        
+        .cathode-in-zone {
+            background: linear-gradient(45deg, #4d79ff, #3366ff);
+            border: 2px solid #6699ff;
+            box-shadow: 0 0 10px rgba(77, 121, 255, 0.5);
+        }
+        
+        .electrolyte-in-zone {
+            background: linear-gradient(45deg, #4dff4d, #33cc33);
+            border: 2px solid #66ff66;
+            box-shadow: 0 0 10px rgba(77, 255, 77, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .electrolyte-in-zone::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.3) 10px,
+                rgba(255, 255, 255, 0.3) 20px
+            );
+        }
+        
+        .circuit-in-zone {
+            background: linear-gradient(45deg, #666666, #333333);
+            border: 2px solid #999999;
+            box-shadow: 0 0 10px rgba(102, 102, 102, 0.5);
+            position: relative;
+        }
+        
+        .circuit-in-zone::before {
+            content: "";
+            position: absolute;
+            top: 40%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .circuit-in-zone::after {
+            content: "";
+            position: absolute;
+            top: 60%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #ffcc00;
+            box-shadow: 0 0 5px #ffcc00;
+        }
+        
+        .component-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9rem;
+            color: #ffcc00;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 8px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .component-label.show {
+            opacity: 1;
+        }
+        
+        .electron-flow {
+            position: absolute;
+            top: 180px;
+            left: 250px;
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #ffcc00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .electron-flow.active {
+            opacity: 1;
+            animation: rotate 3s linear infinite;
+        }
+        
+        .electron-flow::before {
+            content: "e⁻";
+            color: #ffcc00;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .ion-flow {
+            position: absolute;
+            width: 8px;
+            height: 0;
+            background: linear-gradient(to bottom, #4dff4d, #33cc33);
+            border-radius: 4px;
+            left: 248px;
+            top: 100px;
+            opacity: 0;
+            transition: height 0.5s ease, opacity 0.5s ease;
+        }
+        
+        .ion-flow.active {
+            height: 200px;
+            opacity: 1;
+            animation: ionPulse 2s infinite alternate;
+        }
+        
+        @keyframes ionPulse {
+            from { opacity: 0.5; box-shadow: 0 0 5px #4dff4d; }
+            to { opacity: 1; box-shadow: 0 0 15px #4dff4d, 0 0 25px #33cc33; }
+        }
+        
+        .fuel-cell-diagram {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .membrane {
+            position: absolute;
+            top: 50px;
+            left: 250px;
+            width: 2px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .parts-container, .assembly-area {
+                min-width: 100%;
+            }
+            
+            .fuel-cell {
+                width: 350px;
+                height: 350px;
+            }
+            
+            .cell-container {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .drop-zone {
+                width: 70px;
+            }
+            
+            .anode-zone, .cathode-zone {
+                width: 70px;
+                height: 200px;
+            }
+            
+            .electrolyte-zone {
+                width: 120px;
+                height: 200px;
+                left: 100px;
+            }
+            
+            .circuit-zone {
+                width: 250px;
+            }
+            
+            .current-flow {
+                top: 270px;
+                left: 25px;
+            }
+            
+            .ion-flow {
+                left: 149px;
+                top: 70px;
+            }
+            
+            .ion-flow.active {
+                height: 160px;
+            }
+            
+            .electron-flow {
+                left: 145px;
+            }
+            
+            .membrane {
+                left: 150px;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fuel Cell Assembly Simulation</h1>
+            <p class="subtitle">Drag and drop components to build a functioning fuel cell and generate electricity</p>
+        </header>
+        
+        <div class="content">
+            <div class="parts-container">
+                <h2>Fuel Cell Components</h2>
+                <div class="parts-grid">
+                    <div class="part" draggable="true" data-part="anode">
+                        <div class="part-icon anode-icon">ANODE</div>
+                        <div class="part-name">Anode</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="cathode">
+                        <div class="part-icon cathode-icon">CATHODE</div>
+                        <div class="part-name">Cathode</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="electrolyte">
+                        <div class="part-icon electrolyte-icon">ELECTROLYTE</div>
+                        <div class="part-name">Electrolyte</div>
+                    </div>
+                    <div class="part" draggable="true" data-part="circuit">
+                        <div class="part-icon circuit-icon">CIRCUIT</div>
+                        <div class="part-name">External Circuit</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="resetBtn">Reset Simulation</button>
+                </div>
+                
+                <div class="message" id="message">Drag components to the assembly area</div>
+            </div>
+            
+            <div class="assembly-area">
+                <h2>Assembly Area</h2>
+                <div class="fuel-cell">
+                    <div class="cell-container">
+                        <div class="fuel-cell-diagram">
+                            <div class="membrane"></div>
+                        </div>
+                        
+                        <div class="drop-zone anode-zone" data-zone="anode"></div>
+                        <div class="drop-zone cathode-zone" data-zone="cathode"></div>
+                        <div class="drop-zone electrolyte-zone" data-zone="electrolyte"></div>
+                        <div class="drop-zone circuit-zone" data-zone="circuit"></div>
+                        
+                        <div class="current-flow" id="currentFlow"></div>
+                        <div class="bulb" id="bulb"></div>
+                        <div class="electron-flow" id="electronFlow"></div>
+                        <div class="ion-flow" id="ionFlow"></div>
+                        
+                        <div class="hydrogen-flow" id="hydrogenFlow">H₂ →</div>
+                        <div class="oxygen-flow" id="oxygenFlow">← O₂</div>
+                        <div class="water-output" id="waterOutput">← H₂O</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Use:</h3>
+            <ol>
+                <li>Drag components from the parts area and drop them into any zone in the fuel cell</li>
+                <li>You can place any component in any zone, but the fuel cell will only work when all components are in their correct positions</li>
+                <li>When all components are correctly placed, electric current will flow and the bulb will light up</li>
+                <li>You can reset the simulation at any time using the "Reset Simulation" button</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const parts = document.querySelectorAll('.part');
+            const dropZones = document.querySelectorAll('.drop-zone');
+            const currentFlow = document.getElementById('currentFlow');
+            const bulb = document.getElementById('bulb');
+            const message = document.getElementById('message');
+            const resetBtn = document.getElementById('resetBtn');
+            const hydrogenFlow = document.getElementById('hydrogenFlow');
+            const oxygenFlow = document.getElementById('oxygenFlow');
+            const waterOutput = document.getElementById('waterOutput');
+            const electronFlow = document.getElementById('electronFlow');
+            const ionFlow = document.getElementById('ionFlow');
+            
+            let draggedPart = null;
+            let placedParts = {};
+            const totalParts = 4;
+            
+            // إضافة أحداث السحب للأجزاء
+            parts.forEach(part => {
+                part.addEventListener('dragstart', function(e) {
+                    draggedPart = this;
+                    this.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', this.dataset.part);
+                });
+                
+                part.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+            });
+            
+            // إضافة أحداث السقوط للمناطق
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('highlight');
+                });
+                
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    const partType = e.dataTransfer.getData('text/plain');
+                    const zoneType = this.dataset.zone;
+                    
+                    // إضافة الجزء إلى المنطقة
+                    this.classList.add('filled');
+                    
+                    // إضافة الشكل المناسب للمنطقة
+                    const partInZone = document.createElement('div');
+                    partInZone.className = `part-in-zone ${partType}-in-zone`;
+                    partInZone.textContent = partType.toUpperCase();
+                    this.innerHTML = '';
+                    this.appendChild(partInZone);
+                    
+                    // إضافة تسمية الجزء
+                    const componentLabel = document.createElement('div');
+                    componentLabel.className = 'component-label';
+                    componentLabel.textContent = partType.toUpperCase();
+                    partInZone.appendChild(componentLabel);
+                    
+                    // التحقق إذا كان الجزء في المكان الصحيح
+                    const isCorrect = partType === zoneType;
+                    
+                    if (isCorrect) {
+                        this.classList.add('correct');
+                        this.classList.remove('incorrect');
+                        componentLabel.classList.add('show');
+                    } else {
+                        this.classList.add('incorrect');
+                        this.classList.remove('correct');
+                        componentLabel.classList.add('show');
+                    }
+                    
+                    // تسجيل الجزء الموضوغ
+                    placedParts[zoneType] = {
+                        partType: partType,
+                        isCorrect: isCorrect
+                    };
+                    
+                    // تعطيل الجزء بعد وضعه
+                    draggedPart.style.opacity = '0.5';
+                    draggedPart.style.cursor = 'default';
+                    draggedPart.draggable = false;
+                    
+                    // التحقق إذا تم تركيب جميع الأجزاء
+                    const placedCount = Object.keys(placedParts).length;
+                    
+                    if (placedCount < totalParts) {
+                        showMessage(`${placedCount}/${totalParts} components placed. Keep going!`, false);
+                    }
+                    
+                    // التحقق إذا تم تركيب جميع الأجزاء بشكل صحيح
+                    if (placedCount === totalParts) {
+                        checkFuelCellActivation();
+                    }
+                });
+            });
+            
+            // وظيفة التحقق من تفعيل خلية الوقود
+            function checkFuelCellActivation() {
+                const allCorrect = Object.values(placedParts).every(part => part.isCorrect);
+                
+                if (allCorrect) {
+                    activateFuelCell();
+                    showMessage('Congratulations! You have successfully assembled the fuel cell. Electricity is now flowing and the bulb is lit.', true);
+                } else {
+                    showMessage('All components are placed, but the fuel cell is not working correctly. Check the positions and try again.', 'error');
+                }
+            }
+            
+            // وظيفة تفعيل خلية الوقود عند التركيب الصحيح
+            function activateFuelCell() {
+                currentFlow.classList.add('active');
+                bulb.classList.add('lit');
+                hydrogenFlow.classList.add('active');
+                oxygenFlow.classList.add('active');
+                waterOutput.classList.add('active');
+                electronFlow.classList.add('active');
+                ionFlow.classList.add('active');
+            }
+            
+            // وظيفة عرض الرسائل
+            function showMessage(text, type) {
+                message.textContent = text;
+                message.className = 'message';
+                
+                if (type === true) {
+                    message.classList.add('success');
+                } else if (type === 'error') {
+                    message.classList.add('error');
+                }
+                
+                message.style.opacity = '1';
+            }
+            
+            // إعادة تعيين المحاكاة
+            resetBtn.addEventListener('click', function() {
+                parts.forEach(part => {
+                    part.style.opacity = '1';
+                    part.style.cursor = 'grab';
+                    part.draggable = true;
+                });
+                
+                dropZones.forEach(zone => {
+                    zone.classList.remove('filled', 'correct', 'incorrect', 'highlight');
+                    zone.innerHTML = '';
+                });
+                
+                currentFlow.classList.remove('active');
+                bulb.classList.remove('lit');
+                hydrogenFlow.classList.remove('active');
+                oxygenFlow.classList.remove('active');
+                waterOutput.classList.remove('active');
+                electronFlow.classList.remove('active');
+                ionFlow.classList.remove('active');
+                message.textContent = 'Drag components to the assembly area';
+                message.className = 'message';
+                message.style.opacity = '1';
+                placedParts = {};
+            });
+        });
+    </script>
+</body>
+</html>
